@@ -1,0 +1,562 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;; RK - Evalbot (Cortex M3 de Texas Instrument)
+    2 00000000         ;; Les deux LEDs sont initialement allumées
+    3 00000000         ;; Ce programme lis l'état du bouton poussoir 1 connecté
+                       e au port GPIOD broche 6
+    4 00000000         ;; Si bouton poussoir fermé ==> fait clignoter les deux 
+                       LED1&2 connectée au port GPIOF broches 4&5.
+    5 00000000         
+    6 00000000                 AREA             |.text|, CODE, READONLY
+    7 00000000         
+    8 00000000         ; This register controls the clock gating logic in norma
+                       l Run mode
+    9 00000000 400FE108 
+                       SYSCTL_PERIPH_GPIO
+                               EQU              0x400FE108  ; SYSCTL_RCGC2_R (p
+                                                            291 datasheet de lm
+                                                            3s9b92.pdf)
+   10 00000000         
+   11 00000000         ; The GPIODATA register is the data register
+   12 00000000 40025000 
+                       GPIO_PORTF_BASE
+                               EQU              0x40025000  ; GPIO Port F (APB)
+                                                             base: 0x4002.5000 
+                                                            (p416 datasheet de 
+                                                            lm3s9B92.pdf)
+   13 00000000         
+   14 00000000         ; The GPIODATA register is the data register
+   15 00000000 40007000 
+                       GPIO_PORTD_BASE
+                               EQU              0x40007000  ; GPIO Port D (APB)
+                                                             base: 0x4000.7000 
+                                                            (p416 datasheet de 
+                                                            lm3s9B92.pdf)
+   16 00000000         
+   17 00000000         ; The GPIODATA register is the data register
+   18 00000000 40024000 
+                       GPIO_PORTE_BASE
+                               EQU              0x40024000
+   19 00000000         
+   20 00000000         ; configure the corresponding pin to be an output
+   21 00000000         ; all GPIO pins are inputs by default
+   22 00000000 00000400 
+                       GPIO_O_DIR
+                               EQU              0x00000400  ; GPIO Direction (p
+                                                            417 datasheet de lm
+                                                            3s9B92.pdf)
+   23 00000000         
+   24 00000000         ; The GPIODR2R register is the 2-mA drive control regist
+                       er
+   25 00000000         ; By default, all GPIO pins have 2-mA drive.
+   26 00000000 00000500 
+                       GPIO_O_DR2R
+                               EQU              0x00000500  ; GPIO 2-mA Drive S
+                                                            elect (p428 datashe
+                                                            et de lm3s9B92.pdf)
+                                                            
+   27 00000000         
+   28 00000000         ; Digital enable register
+   29 00000000         ; To use the pin as a digital input or output, the corre
+                       sponding GPIODEN bit must be set.
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   30 00000000 0000051C 
+                       GPIO_O_DEN
+                               EQU              0x0000051C  ; GPIO Digital Enab
+                                                            le (p437 datasheet 
+                                                            de lm3s9B92.pdf)
+   31 00000000         
+   32 00000000         ; Pul_up
+   33 00000000 00000510 
+                       GPIO_I_PUR
+                               EQU              0x00000510  ; GPIO Pull-Up (p43
+                                                            2 datasheet de lm3s
+                                                            9B92.pdf)
+   34 00000000         
+   35 00000000         ; Broches select
+   36 00000000         ;BROCHE4_5   EQU  0x30  ; led1 & led2 sur broche 4 et 5
+   37 00000000         
+   38 00000000 00000010 
+                       BROCHE4 EQU              0x10        ; ledD
+   39 00000000         
+   40 00000000 00000020 
+                       BROCHE5 EQU              0x20        ; ledG
+   41 00000000         
+   42 00000000 00000030 
+                       BROCHE4_5
+                               EQU              0x30        ; ledD&G
+   43 00000000         
+   44 00000000 00000001 
+                       BROCHE6 EQU              0x01        ; bumperD
+   45 00000000         
+   46 00000000 00000002 
+                       BROCHE7 EQU              0x02        ; bumperG
+   47 00000000         
+   48 00000000 00000003 
+                       BROCHE6_7
+                               EQU              0x03        ; bumperD_G
+   49 00000000         
+   50 00000000 00000040 
+                       BROCHE1 EQU              0x40        ; switch1
+   51 00000000         
+   52 00000000 00000080 
+                       BROCHE2 EQU              0x80        ; switch2
+   53 00000000         
+   54 00000000 000000C0 
+                       BROCHE1_2
+                               EQU              0xC0        ;; Switchs 1 & 2 on
+                                                             Pins 6 & 7 (1100 0
+                                                            000)
+   55 00000000         
+   56 00000000         
+   57 00000000         ; blinking frequency
+   58 00000000 001E2FFF 
+                       DUREE   EQU              0x1E2FFF
+   59 00000000 0000000A 
+                       COMPT_MAX
+                               EQU              10
+   60 00000000         
+   61 00000000         
+   62 00000000         
+   63 00000000                 ENTRY
+
+
+
+ARM Macro Assembler    Page 3 
+
+
+   64 00000000                 EXPORT           __main
+   65 00000000         
+   66 00000000         ;; The IMPORT command specifies that a symbol is defined
+                        in a shared object at runtime.
+   67 00000000                 IMPORT           MOTEUR_INIT ; initialise les mo
+                                                            teurs (configure le
+                                                            s pwms + GPIO)
+   68 00000000         
+   69 00000000                 IMPORT           MOTEUR_DROIT_ON ; activer le mo
+                                                            teur droit
+   70 00000000                 IMPORT           MOTEUR_DROIT_OFF ; déactiver le
+                                                             moteur droit
+   71 00000000                 IMPORT           MOTEUR_DROIT_AVANT ; moteur dro
+                                                            it tourne vers l'av
+                                                            ant
+   72 00000000                 IMPORT           MOTEUR_DROIT_ARRIERE ; moteur d
+                                                            roit tourne vers l'
+                                                            arrière
+   73 00000000                 IMPORT           MOTEUR_DROIT_INVERSE ; inverse 
+                                                            le sens de rotation
+                                                             du moteur droit
+   74 00000000         
+   75 00000000                 IMPORT           MOTEUR_GAUCHE_ON ; activer le m
+                                                            oteur gauche
+   76 00000000                 IMPORT           MOTEUR_GAUCHE_OFF ; déactiver l
+                                                            e moteur gauche
+   77 00000000                 IMPORT           MOTEUR_GAUCHE_AVANT ; moteur ga
+                                                            uche tourne vers l'
+                                                            avant
+   78 00000000                 IMPORT           MOTEUR_GAUCHE_ARRIERE ; moteur 
+                                                            gauche tourne vers 
+                                                            l'arrière
+   79 00000000                 IMPORT           MOTEUR_GAUCHE_INVERSE ; inverse
+                                                             le sens de rotatio
+                                                            n du moteur gauche
+   80 00000000         
+   81 00000000         
+   82 00000000         
+   83 00000000         __main
+   84 00000000         
+   85 00000000         ; ;; Enable the Port F & D peripheral clock   (p291 data
+                       sheet de lm3s9B96.pdf)
+   86 00000000         ; ;;         
+   87 00000000 4E53            ldr              r6, = SYSCTL_PERIPH_GPIO 
+                                                            ;; RCGC2
+   88 00000002 F04F 0038       mov              r0, #0x00000038 ;; Enable clock
+                                                             sur GPIO D et F où
+                                                             sont branchés les 
+                                                            leds (0x28 == 0b101
+                                                            000)
+   89 00000006         ; ;;                              (GPIO::FEDCBA)
+   90 00000006 6030            str              r0, [r6]
+   91 00000008         
+   92 00000008         ; ;; "There must be a delay of 3 system clocks before an
+                       y GPIO reg. access  (p413 datasheet de lm3s9B92.pdf)
+   93 00000008 BF00            nop                          ;; tres tres import
+                                                            ant....
+   94 0000000A BF00            nop
+   95 0000000C BF00            nop                          ;; pas necessaire e
+
+
+
+ARM Macro Assembler    Page 4 
+
+
+                                                            n simu ou en debbug
+                                                             step by step...
+   96 0000000E         
+   97 0000000E         ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^CONFIGURATION LED
+   98 0000000E         
+   99 0000000E         ;; led 1
+  100 0000000E         
+  101 0000000E 4E51            ldr              r6, = GPIO_PORTF_BASE+GPIO_O_DI
+R 
+                                                            ;; 1 Pin du portF e
+                                                            n sortie (broche 4 
+                                                            : 00010000)
+  102 00000010 F04F 0030       ldr              r0, = BROCHE4_5
+  103 00000014 6030            str              r0, [r6]
+  104 00000016         
+  105 00000016 4E50            ldr              r6, = GPIO_PORTF_BASE+GPIO_O_DE
+N 
+                                                            ;; Enable Digital F
+                                                            unction 
+  106 00000018 F04F 0030       ldr              r0, = BROCHE4_5
+  107 0000001C 6030            str              r0, [r6]
+  108 0000001E         
+  109 0000001E 4E4F            ldr              r6, = GPIO_PORTF_BASE+GPIO_O_DR
+2R 
+                                                            ;; Choix de l'inten
+                                                            sité de sortie (2mA
+                                                            )
+  110 00000020 F04F 0030       ldr              r0, = BROCHE4_5
+  111 00000024 6030            str              r0, [r6]
+  112 00000026         
+  113 00000026 F04F 0200       mov              r2, #0x000  ;; pour eteindre LE
+                                                            D
+  114 0000002A         
+  115 0000002A         ; allumer la led broche 4 (BROCHE4_5)
+  116 0000002A F04F 0330       mov              r3, #BROCHE4_5 ;; Allume LED1&2
+                                                             portF broche 4&5 :
+                                                             00110000
+  117 0000002E         
+  118 0000002E         
+  119 0000002E 4E4C            ldr              r6, = GPIO_PORTF_BASE + (BROCHE
+4_5<<2) 
+                                                            ;; @data Register =
+                                                             @base + (mask<<2) 
+                                                            ==> LED1
+  120 00000030         
+  121 00000030         
+  122 00000030         ;; led 2x
+  123 00000030         
+  124 00000030         
+  125 00000030         ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^CONFIGURATION Switcher 1
+  126 00000030         
+  127 00000030 4F4C            ldr              r7, = GPIO_PORTE_BASE+GPIO_I_PU
+R 
+                                                            ;; Pul_up 
+  128 00000032 F04F 0003       ldr              r0, = BROCHE6_7
+  129 00000036 6038            str              r0, [r7]
+  130 00000038         
+  131 00000038 4F4B            ldr              r7, = GPIO_PORTE_BASE+GPIO_O_DE
+N 
+
+
+
+ARM Macro Assembler    Page 5 
+
+
+                                                            ;; Enable Digital F
+                                                            unction 
+  132 0000003A F04F 0003       ldr              r0, = BROCHE6_7
+  133 0000003E 6038            str              r0, [r7]
+  134 00000040         
+  135 00000040 4F4A            ldr              r7, = GPIO_PORTE_BASE + (BROCHE
+6_7<<2) 
+                                                            ;; @data Register =
+                                                             @base + (mask<<2) 
+                                                            ==> Switcher
+  136 00000042         
+  137 00000042         ;vvvvvvvvvvvvvvvvvvvvvvvFin configuration Switcher 
+  138 00000042         
+  139 00000042         ;;----------------------CONF_SWITCHS
+  140 00000042 F04F 09C0       LDR              r9, =BROCHE1_2 ;; Get the value
+                                                             to enable PINS 6 &
+                                                             7 on PORTD
+  141 00000046 4F4A            LDR              r7, =GPIO_PORTD_BASE+GPIO_O_DEN
+ 
+                                                            ;;
+  142 00000048 F8C7 9000       STR              r9, [r7]    ;; Enable PINS 6 & 
+                                                            7 on PORTD with GPI
+                                                            O_O_DEN  
+  143 0000004C 4F49            LDR              r7, =GPIO_PORTD_BASE+GPIO_O_PUR
+ 
+                                                            ;;
+  144 0000004E F8C7 9000       STR              r9, [r7]    ;; Enable PINS 6 & 
+                                                            7 on PORTD with GPI
+                                                            O_O_PUR
+  145 00000052 4F49            LDR              r7, =GPIO_PORTD_BASE+(BROCHE1_2
+<<2) 
+                                                            ;; Enable Switchs t
+                                                            hat correspond to P
+                                                            ORTD PINS 6 & 7 val
+                                                            ues
+  146 00000054         ;;----------------------END CONF_SWITCHS
+  147 00000054         
+  148 00000054         
+  149 00000054         ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^CLIGNOTTEMENT
+  150 00000054         
+  151 00000054 6033            str              r3, [r6]    ;; Allume LED1&2 po
+                                                            rtF broche 4&5 : 00
+                                                            110000 (contenu de 
+                                                            r3)
+  152 00000056         
+  153 00000056         ; Configure les PWM + GPIO
+  154 00000056 F7FF FFFE       BL               MOTEUR_INIT
+  155 0000005A         
+  156 0000005A         ; Activer les deux moteurs droit et gauche
+  157 0000005A F7FF FFFE       BL               MOTEUR_DROIT_ON
+  158 0000005E F7FF FFFE       BL               MOTEUR_GAUCHE_ON
+  159 00000062         
+  160 00000062         
+  161 00000062         ReadState_ini
+  162 00000062         
+  163 00000062 F7FF FFFE       BL               MOTEUR_GAUCHE_OFF
+  164 00000066 F7FF FFFE       BL               MOTEUR_DROIT_OFF
+  165 0000006A         
+  166 0000006A         
+
+
+
+ARM Macro Assembler    Page 6 
+
+
+  167 0000006A F8DF 8110       ldr              r8, = GPIO_PORTD_BASE + (BROCHE
+1<<2)
+  168 0000006E F8D8 8000       ldr              r8, [r8]
+  169 00000072 F1B8 0F00       CMP              r8, #0x00
+  170 00000076 D009            BEQ              depart
+  171 00000078         
+  172 00000078 F8DF 8104       ldr              r8, = GPIO_PORTD_BASE + (BROCHE
+2<<2)
+  173 0000007C F8D8 8000       ldr              r8, [r8]
+  174 00000080 F1B8 0F00       CMP              r8, #0x00
+  175 00000084 D017            BEQ              ReadState
+  176 00000086         
+  177 00000086         
+  178 00000086         
+  179 00000086 F04F 0400       mov              r4, #0      ;Initialisation du 
+                                                            compteur 
+  180 0000008A         
+  181 0000008A E7EA            B                ReadState_ini
+  182 0000008C         
+  183 0000008C         depart
+  184 0000008C         
+  185 0000008C F7FF FFFE       BL               MOTEUR_DROIT_ON
+  186 00000090 F7FF FFFE       BL               MOTEUR_GAUCHE_ON
+  187 00000094         
+  188 00000094         echauffement
+  189 00000094 F7FF FFFE       BL               MOTEUR_GAUCHE_ARRIERE
+  190 00000098 F7FF FFFE       BL               MOTEUR_DROIT_ARRIERE
+  191 0000009C F8DF 90E4       ldr              r9, = GPIO_PORTF_BASE + (BROCHE
+4<<2)
+  192 000000A0 F8C9 2000       str              r2, [r9]    ;; eteint la led1
+  193 000000A4 4938            ldr              r1, = DUREE ;; pour la duree de
+                                                             la boucle d'attent
+                                                            e1 (wait1)
+  194 000000A6         
+  195 000000A6         
+  196 000000A6 3901    wait_ini
+                               subs             r1, #1
+  197 000000A8 D1FD            bne              wait_ini
+  198 000000AA         
+  199 000000AA F8C9 3000       str              r3, [r9]    ;; allume la led1
+  200 000000AE         
+  201 000000AE 1C64            adds             r4, r4, #1  ;; Incrémentation d
+                                                            u compteur
+  202 000000B0         
+  203 000000B0 2C05            CMP              r4, #5      ;; Vérification si 
+                                                            le compteur a attei
+                                                            nt la valeur maxima
+                                                            le
+  204 000000B2         
+  205 000000B2 D0D6            BEQ              ReadState_ini ;; Si oui, termin
+                                                            er le programme
+  206 000000B4         
+  207 000000B4 E7EE            b                echauffement
+  208 000000B6         
+  209 000000B6         
+  210 000000B6         
+  211 000000B6         ReadState
+  212 000000B6         
+  213 000000B6 F7FF FFFE       BL               MOTEUR_DROIT_AVANT
+
+
+
+ARM Macro Assembler    Page 7 
+
+
+  214 000000BA F7FF FFFE       BL               MOTEUR_GAUCHE_AVANT
+  215 000000BE         
+  216 000000BE F8DF 80CC       ldr              r8, = GPIO_PORTE_BASE + (BROCHE
+6<<2)
+  217 000000C2 F8D8 8000       ldr              r8, [r8]
+  218 000000C6 F1B8 0F00       CMP              r8, #0x00
+  219 000000CA D009            BEQ              bumperun
+  220 000000CC         
+  221 000000CC F8DF 90C0       ldr              r9, = GPIO_PORTE_BASE + (BROCHE
+7<<2)
+  222 000000D0 F8D9 9000       ldr              r9, [r9]
+  223 000000D4 F1B9 0F00       CMP              r9, #0x00
+  224 000000D8 D018            BEQ              bumperdeux
+  225 000000DA         
+  226 000000DA F04F 0400       mov              r4, #0      ;Initialisation du 
+                                                            compteur 
+  227 000000DE         
+  228 000000DE E7EA            B                ReadState
+  229 000000E0         ;ldr r10,[r7]
+  230 000000E0         ;CMP r10,#0x00
+  231 000000E0         ;BNE ReadState
+  232 000000E0         
+  233 000000E0         
+  234 000000E0         
+  235 000000E0         bumperun
+  236 000000E0         
+  237 000000E0 F8DF 90AC       ldr              r9, = GPIO_PORTE_BASE + (BROCHE
+7<<2)
+  238 000000E4 F8D9 9000       ldr              r9, [r9]
+  239 000000E8 F1B9 0F00       CMP              r9, #0x00
+  240 000000EC D025            BEQ              loop
+  241 000000EE         
+  242 000000EE         allumeledun
+  243 000000EE F7FF FFFE       BL               MOTEUR_GAUCHE_ARRIERE
+  244 000000F2 F8DF 9090       ldr              r9, = GPIO_PORTF_BASE + (BROCHE
+4<<2)
+  245 000000F6 F8C9 2000       str              r2, [r9]    ;; eteint la led1
+  246 000000FA 4923            ldr              r1, = DUREE ;; pour la duree de
+                                                             la boucle d'attent
+                                                            e1 (wait1)
+  247 000000FC         
+  248 000000FC         
+  249 000000FC 3901    wait1   subs             r1, #1
+  250 000000FE D1FD            bne              wait1
+  251 00000100         
+  252 00000100 F8C9 3000       str              r3, [r9]    ;; allume la led1
+  253 00000104         
+  254 00000104 1C64            adds             r4, r4, #1  ;; Incrémentation d
+                                                            u compteur
+  255 00000106         
+  256 00000106 2C01            CMP              r4, #1      ;; Vérification si 
+                                                            le compteur a attei
+                                                            nt la valeur maxima
+                                                            le
+  257 00000108         
+  258 00000108 D0D5            BEQ              ReadState   ;; Si oui, terminer
+                                                             le programme
+  259 0000010A         
+  260 0000010A E7F0            b                allumeledun
+
+
+
+ARM Macro Assembler    Page 8 
+
+
+  261 0000010C         
+  262 0000010C         bumperdeux
+  263 0000010C         
+  264 0000010C F8DF 807C       ldr              r8, = GPIO_PORTE_BASE + (BROCHE
+6<<2)
+  265 00000110 F8D8 8000       ldr              r8, [r8]
+  266 00000114 F1B8 0F00       CMP              r8, #0x00
+  267 00000118 D00F            BEQ              loop
+  268 0000011A         
+  269 0000011A         allumeleddeux
+  270 0000011A F7FF FFFE       BL               MOTEUR_DROIT_ARRIERE
+  271 0000011E F8DF 8074       ldr              r8, = GPIO_PORTF_BASE + (BROCHE
+5<<2)
+  272 00000122 F8C8 2000       str              r2, [r8]
+  273 00000126 4918            ldr              r1, = DUREE ;; pour la duree de
+                                                             la boucle d'attent
+                                                            e1 (wait1)
+  274 00000128         
+  275 00000128         
+  276 00000128 3901    wait3   subs             r1, #1
+  277 0000012A D1FD            bne              wait3
+  278 0000012C         
+  279 0000012C F8C8 3000       str              r3, [r8]    ;; Allume LED1&2 po
+                                                            rtF broche 4&5 : 00
+                                                            110000 (contenu de 
+                                                            r3)
+  280 00000130 4915            ldr              r1, = DUREE ;; pour la duree de
+                                                             la boucle d'attent
+                                                            e2 (wait2)
+  281 00000132         
+  282 00000132         ; Incrémentation du compteur
+  283 00000132 1C64            adds             r4, r4, #1
+  284 00000134         ; Vérification si le compteur a atteint la valeur maxima
+                       le
+  285 00000134 2C01            CMP              r4, #1
+  286 00000136 D0BE            BEQ              ReadState   ; Si oui, terminer 
+                                                            le programme
+  287 00000138         
+  288 00000138 E7EF            b                allumeleddeux
+  289 0000013A         
+  290 0000013A         loop
+  291 0000013A 6032            str              r2, [r6]    ;; Eteint LED car r
+                                                            2 = 0x00      
+  292 0000013C 4912            ldr              r1, = DUREE ;; pour la duree de
+                                                             la boucle d'attent
+                                                            e1 (wait1)
+  293 0000013E         
+  294 0000013E         
+  295 0000013E         
+  296 0000013E 3901    wait5   subs             r1, #1
+  297 00000140 D1FD            bne              wait5
+  298 00000142         
+  299 00000142         
+  300 00000142 6033            str              r3, [r6]    ;; Allume LED1&2 po
+                                                            rtF broche 4&5 : 00
+                                                            110000 (contenu de 
+                                                            r3)
+  301 00000144 4910            ldr              r1, = DUREE ;; pour la duree de
+                                                             la boucle d'attent
+
+
+
+ARM Macro Assembler    Page 9 
+
+
+                                                            e2 (wait2)
+  302 00000146         
+  303 00000146 3901    wait6   subs             r1, #1
+  304 00000148 D1FD            bne              wait6
+  305 0000014A         
+  306 0000014A         
+  307 0000014A         
+  308 0000014A E7F6            b                loop
+  309 0000014C         
+  310 0000014C BF00            nop
+  311 0000014E                 END
+              00 00 400FE108 
+              40025400 
+              4002551C 
+              40025500 
+              400250C0 
+              40024510 
+              4002451C 
+              4002400C 
+              4000751C 
+              00000000 
+              40007300 
+              40007100 
+              40007200 
+              40025040 
+              001E2FFF 
+              40024004 
+              40024008 
+              40025080 
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M3 --apcs=interw
+ork --depend=.\objects\main.d -o.\objects\main.o -I.\RTE\_Target_1 -IC:\Users\a
+foua\AppData\Local\Arm\Packs\ARM\CMSIS\5.5.1\CMSIS\Core\Include -IC:\Users\afou
+a\AppData\Local\Arm\Packs\ARM\CMSIS\5.5.1\Device\ARM\ARMCM3\Include --predefine
+="__EVAL SETA 1" --predefine="__MICROLIB SETA 1" --predefine="__UVISION_VERSION
+ SETA 528" --predefine="_RTE_ SETA 1" --predefine="ARMCM3 SETA 1" --list=.\list
+ings\main.lst main.s

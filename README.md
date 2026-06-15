@@ -1,33 +1,44 @@
-# Projet Evalbot Assembleur
+# Projet Evalbot — Assembleur 🤖
 
-Ce projet consiste en la programmation d'un robot Evalbot pour une course dynamique. Lors de son allumage, les LED s'illuminent, et diverses actions sont déclenchées par l'utilisateur via les switches.
+> **Programmation en assembleur d'un robot Evalbot pour une course dynamique (LEDs, switches, bumpers).**
 
-## Scénarios
+![Assembleur](https://img.shields.io/badge/Assembleur-14b8a6?style=flat-square)
+![Type](https://img.shields.io/badge/ESIEE-555?style=flat-square)
+[![Portfolio](https://img.shields.io/badge/Portfolio-afouanee.dev-14b8a6?style=flat-square)](https://afouanee.dev/projects/evalbot-asm)
 
-1. **Allumage du robot et illumination des LED**
-   - Dès l'allumage, les LED s'illuminent, prêtes pour l'interaction.
+## ✨ Aperçu
+Projet ESIEE de programmation bas niveau : un robot Evalbot est programmé en assembleur pour participer à une course dynamique. Le projet démontre la maîtrise de la programmation directe du matériel — gestion des LEDs, lecture des switches et des bumpers, et pilotage des moteurs — ainsi que la mise en place d'une stratégie de navigation autonome.
 
-2. **Appui sur le switch 1**
-   - Lorsque le switch 1 est pressé, les LED clignotent pour préparer le robot à la course.
-   - Le robot effectue une rotation sur lui-même pour saluer les fans.
-   - Ensuite, il revient à son état initial.
+## 🚀 Fonctionnalités
+- **Allumage** : dès la mise sous tension, les LEDs s'illuminent, prêtes pour l'interaction.
+- **Switch 1 (salut)** : les LEDs clignotent, le robot effectue une rotation sur lui-même pour saluer, puis revient à son état initial.
+- **Switch 2 (course)** : le robot entre en mode course.
+- **Bumpers** : au contact d'un obstacle, la LED du côté touché s'éteint et le robot effectue une légère rotation du côté opposé.
+- **Stratégie « suivre le mur »** : le robot longe le mur pour conserver une trajectoire optimale pendant la course.
 
-3. **Appui sur le switch 2**
-   - Lorsque le switch 2 est pressé, le robot entre en mode course.
+## 🛠️ Stack technique
+- **Langage** : Assembleur
+- **Plateforme** : robot Evalbot
+- **Outils** : Keil µVision (projet `.uvprojx`), configuration moteur (`RK_Config_Moteur.s`)
 
-4. **Contact d'un bumper**
-   - Si l'un des bumpers détecte un contact avec un obstacle, la LED du côté touché s'éteint.
+## ▶️ Lancer le projet
+```text
+Ouvrir projet_evalbot.uvprojx dans Keil µVision, compiler,
+puis flasher le binaire sur le robot Evalbot.
+```
 
-5. **Réaction au contact du bumper**
-   - Le robot effectue une légère rotation du côté opposé du bumper actif.
+## 📂 Structure
+```
+main.s                  # programme principal (scénarios LEDs/switches/bumpers/course)
+RK_Config_Moteur.s      # configuration des moteurs
+projet_evalbot.uvprojx  # projet Keil µVision
+Rapport-Projet-G1I10_3I-IN1.pdf  # rapport du projet
+```
 
-6. **Stratégie adoptée : "Suivre le mur"**
-   - Pour maximiser l'efficacité, le robot suit la stratégie de "suivre le mur" pendant la course.
-   - Cette stratégie permet au robot de rester en contact avec le mur, assurant ainsi une trajectoire optimale.
-
-## Langage de programmation
-Ce projet est développé en assembleur.
-
-## Auteurs
+## 👥 Auteurs du projet
 - Afouane MOUHAMAD
 - Hamza CHAABA
+
+---
+🔗 **Fiche projet** : [afouanee.dev/projects/evalbot-asm](https://afouanee.dev/projects/evalbot-asm)
+👤 **Auteur** : Afouane MOUHAMAD — [Portfolio](https://afouanee.dev) · [LinkedIn](https://linkedin.com/in/afouane-mouhamad)

@@ -38,7 +38,3 @@ Rapport-Projet-G1I10_3I-IN1.pdf  # rapport du projet
 ## 👥 Auteurs du projet
 - Afouane MOUHAMAD
 - Hamza CHAABA
-
----
-🔗 **Fiche projet** : [afouanee.dev/projects/evalbot-asm](https://afouanee.dev/projects/evalbot-asm)
-👤 **Auteur** : Afouane MOUHAMAD — [Portfolio](https://afouanee.dev) · [LinkedIn](https://linkedin.com/in/afouane-mouhamad)
